@@ -121,6 +121,11 @@ export class WebsocketClient {
       const out = this.outbounds.get(method);
       if (out) {
         out(data);
+      } else {
+        const handle = this.handles.get(method);
+        if (handle) {
+          handle.target[handle.property](data);
+        }
       }
     }
   }
@@ -136,5 +141,9 @@ export class WebsocketClient {
   }
   static expectOutbound(method: string, callback: (data: any) => void) {
     return WebsocketClient.conn?.expectOutbound(method, callback);
+  }
+  private handles: Map<string, { target: any; property: string }> = new Map();
+  static registerHandle(method: string, target: any, property: string) {
+    this.conn.handles.set(method, { target, property });
   }
 }
