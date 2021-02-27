@@ -1,20 +1,15 @@
 import { WebsocketClient } from "../../client/websocket/client";
 
 export function Outbound(method: string, requestingRequired?: boolean) {
-  return function _Outbound(
-    target: any,
-    propertyKey: string,
-    config: any
-  ): any {
+  return function _Outbound(target: any, propertyKey: string): any {
     // property annotation
     WebsocketClient.expectOutbound(method, function setOutbound(data: any) {
       target.___received[propertyKey] = true;
       target[propertyKey] = data;
     });
     return {
-      configurable: config.configurable,
-      enumerable: config.enumerable,
-      writeable: config.writable,
+      configurable: true,
+      writeable: true,
       get() {
         if (!target.___received[propertyKey] && requestingRequired) {
           WebsocketClient.send("request." + method, null).then();
