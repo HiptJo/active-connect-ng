@@ -1,4 +1,4 @@
-export abstract class WebsocketClient {
+export class WebsocketClient {
   ws: WebSocket;
   pool: { WssConnected: boolean } | null;
 
