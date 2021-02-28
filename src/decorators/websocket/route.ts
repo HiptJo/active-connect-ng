@@ -10,5 +10,6 @@ export function Route(method: string) {
       await promise;
       return res;
     };
+    return target;
   };
 }
