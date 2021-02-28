@@ -146,4 +146,9 @@ export class WebsocketClient {
   static registerHandle(method: string, target: any, property: string) {
     this.conn.handles.set(method, { target, property });
   }
+
+  public get isConnected(): boolean {
+    if (this.ws) return this.ws.readyState == WebSocket.OPEN;
+    return true;
+  }
 }
