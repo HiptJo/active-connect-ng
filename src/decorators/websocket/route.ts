@@ -3,7 +3,7 @@ export function Route(method: string) {
     // method annotation
     const original = target[propertyKey];
     target[propertyKey] = async function execRoute(data: any): Promise<any> {
-      const promise = original();
+      const promise = original.bind(this)();
       let res = null;
       if (this.client) {
         res = await this.client.send(method, data);
