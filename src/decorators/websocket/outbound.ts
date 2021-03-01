@@ -2,34 +2,40 @@ import { WebsocketClient } from "../../client/websocket/client";
 
 export function Outbound(method: string, requestingRequired?: boolean) {
   return function _Outbound(target: any, propertyKey: string): any {
+    target.loading = new Map<string, boolean>();
     // property annotation
     WebsocketClient.expectOutbound(method, function setOutbound(data: any) {
       if (!target.___received) target.___received = {};
       if (!target.___data) target.___data = {};
       target.___received[propertyKey] = true;
       target.___data[propertyKey] = data;
+      target.loading.set(propertyKey, false);
     });
     return {
       configurable: true,
       writeable: true,
       get() {
         if (!target.___received) target.___received = {};
-        if (!target.___received[propertyKey] && requestingRequired) {
+        if (!target.___requested) target.___requested = {};
+        if (
+          !target.___received[propertyKey] &&
+          requestingRequired &&
+          !target.___requested[propertyKey]
+        ) {
+          target.___requested[propertyKey] = true;
           this.client.send("request." + method, null).then();
         }
         if (!target.___data) target.___data = {};
-        if (!target.loading) target.loading = {};
         if (!target.___data[propertyKey]) {
-          target.loading[propertyKey] = true;
+          target.loading.set(propertyKey, true);
         } else if (target.loading[propertyKey]) {
-          target.loading[propertyKey] = false;
+          target.loading.set(propertyKey, false);
         }
         return target.___data[propertyKey];
       },
       set(val: any) {
         if (!target.___data) target.___data = {};
-        if (!target.loading) target.loading = {};
-        target.loading[propertyKey] = false;
+        target.loading.set(propertyKey, false);
         return (target.___data[propertyKey] = val);
       },
     };

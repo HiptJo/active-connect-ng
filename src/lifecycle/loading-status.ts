@@ -1,26 +1,30 @@
 export class LoadingStatus {
+  private __proto__: any;
   static loading: Map<string, boolean>;
-  isLoading(entry?: string): boolean {
-    if (entry) {
-      // return specific loading
-      return LoadingStatus.loading.has(entry);
-    } else {
-      // return general loading
-      return LoadingStatus.loading.size > 0;
-    }
+  get isLoading(): boolean {
+    // return general loading
+    let anyTrue = false;
+    this.__proto__.loading.forEach((e: boolean) => {
+      anyTrue ||= e;
+    });
+    if (!anyTrue) this.__proto__.loading.clear();
+    return this.__proto__.loading.size > 0;
+  }
+  getLoadingMap(): Map<string, boolean> {
+    return this.__proto__.loading;
   }
 
-  getCurrent(): number {
+  get getCurrent(): number {
     let count = 0;
-    LoadingStatus.loading.forEach((e) => {
+    this.__proto__.loading.forEach((e: boolean) => {
       if (e) count++;
     });
     if (count == 0) {
-      LoadingStatus.loading.clear();
+      this.__proto__.loading.clear();
     }
     return count;
   }
-  getTotal(): number {
-    return LoadingStatus.loading.size;
+  get getTotal(): number {
+    return this.__proto__.loading.size;
   }
 }

@@ -3,7 +3,6 @@ export class WebsocketClient {
   pool: { WssConnected: boolean } | null;
 
   constructor(private url?: string) {
-    WebsocketClient.conn = this;
     if (!url) {
       let protocol;
       let port;
@@ -21,7 +20,7 @@ export class WebsocketClient {
       }
       this.url = protocol + "//" + document.location.hostname + port + "/wss";
     }
-    this.connect(url);
+    this.connect(this.url);
   }
 
   subject: any;
@@ -65,34 +64,32 @@ export class WebsocketClient {
     console.log("trying to recreate connection");
     try {
       this.ws = new WebSocket(url);
+      this.ws.onerror = (err) => {
+        console.log(err);
+        this.connect(url);
+      };
+      this.ws.onopen = () => {
+        this.Connected = true;
+      };
+      this.ws.onmessage = (e) => {
+        this.messageReceived(JSON.parse(e.data.toString()));
+      };
+      this.ws.onclose = () => {
+        this.Connected = false;
+        this.connect(url);
+      };
     } catch (e) {
       setTimeout(() => {
         this.connect(url);
       }, 500);
     }
-
-    this.ws.onerror = (err) => {
-      console.log(err);
-      this.connect(url);
-    };
-    this.ws.onopen = () => {
-      this.Connected = true;
-    };
-    this.ws.onmessage = (e) => {
-      this.messageReceived(JSON.parse(e.data.toString()));
-    };
-    this.ws.onclose = () => {
-      this.Connected = false;
-      this.connect(this.url);
-    };
   }
 
   protected sendToSocket(method: string, data: any) {
     if (!this.connected) {
       this.requestStack.push({ method, data });
     } else {
-      //console.log(JSON.stringify({ method, data }));
-      this.ws.send(JSON.stringify({ method, data }));
+      this.ws.send(JSON.stringify({ method, value: data }));
     }
   }
 
@@ -102,7 +99,7 @@ export class WebsocketClient {
 
   public send(method: string, data: any): Promise<any> {
     this.sendToSocket(method, data);
-    return this.expectMethod(`r.${method}`);
+    return this.expectMethod(`m.${method}`);
   }
   // remove map to allow duplicate calls
   private expectedMethods: Map<string, Function> = new Map();
@@ -112,39 +109,35 @@ export class WebsocketClient {
     });
   }
 
-  private messageReceived({ method, data }: { method: string; data: any }) {
+  private messageReceived({ method, value }: { method: string; value: any }) {
     const callback = this.expectedMethods.get(method);
     if (callback) {
       this.expectedMethods.delete(method);
-      callback(data);
+      callback(value);
     } else {
-      const out = this.outbounds.get(method);
+      const out = WebsocketClient.outbounds.get(method);
       if (out) {
-        out(data);
+        out(value);
       } else {
-        const handle = this.handles.get(method);
+        const handle = WebsocketClient.handles.get(method);
         if (handle) {
-          handle.target[handle.property](data);
+          handle.target[handle.property](value);
         }
       }
     }
   }
 
-  private outbounds: Map<string, (data: any) => void> = new Map();
-  protected expectOutbound(method: string, callback: (data: any) => void) {
-    this.outbounds.set(method, callback);
+  private static outbounds: Map<string, (data: any) => void> = new Map();
+  static expectOutbound(method: string, callback: (data: any) => void) {
+    WebsocketClient.outbounds.set(method, callback);
   }
 
-  static conn: WebsocketClient;
-  static send(method: string, data: any): Promise<any> {
-    return WebsocketClient.conn?.send(method, data);
-  }
-  static expectOutbound(method: string, callback: (data: any) => void) {
-    return WebsocketClient.conn?.expectOutbound(method, callback);
-  }
-  private handles: Map<string, { target: any; property: string }> = new Map();
+  private static handles: Map<
+    string,
+    { target: any; property: string }
+  > = new Map();
   static registerHandle(method: string, target: any, property: string) {
-    this.conn.handles.set(method, { target, property });
+    WebsocketClient.handles.set(method, { target, property });
   }
 
   public get isConnected(): boolean {
