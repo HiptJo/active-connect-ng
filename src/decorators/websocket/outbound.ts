@@ -11,17 +11,20 @@ export function Outbound(method: string, requestingRequired?: boolean) {
       target.___data[propertyKey] = data;
       target.loading.set(propertyKey, false);
     });
+    if (requestingRequired) {
+      WebsocketClient.addResetRequestingStateCallback(function callback() {
+        if (target.___requested) {
+          target.___requested[propertyKey] = false;
+        }
+      });
+    }
     return {
       configurable: true,
       writeable: true,
       get() {
         if (!target.___received) target.___received = {};
         if (!target.___requested) target.___requested = {};
-        if (
-          !target.___received[propertyKey] &&
-          requestingRequired &&
-          !target.___requested[propertyKey]
-        ) {
+        if (requestingRequired && !target.___requested[propertyKey]) {
           target.___requested[propertyKey] = true;
           this.client.send("request." + method, null).then();
         }

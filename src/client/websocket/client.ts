@@ -49,6 +49,7 @@ export class WebsocketClient {
 
   private connected: boolean;
   private set Connected(value: boolean) {
+    if (value) this.resetRequestedState();
     this.connected = value;
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
     if (value) {
@@ -58,6 +59,21 @@ export class WebsocketClient {
         this.requestStack = this.requestStack.filter((e1) => e1 != e);
       });
     }
+  }
+  private static resetRequestedStateCallbacks: Function[] = [];
+  private connectionEstablishedOnce: boolean = false;
+  private resetRequestedState() {
+    if (this.connectionEstablishedOnce) {
+      // reset requested state for outbounds
+      WebsocketClient.resetRequestedStateCallbacks.forEach((reset) => {
+        reset();
+      });
+    } else {
+      this.connectionEstablishedOnce = true;
+    }
+  }
+  public static addResetRequestingStateCallback(callback: Function) {
+    WebsocketClient.resetRequestedStateCallbacks.push(callback);
   }
 
   private create(url: string) {
