@@ -49,16 +49,16 @@ export class WebsocketClient {
 
   private connected: boolean;
   private set Connected(value: boolean) {
-    if (value) this.resetRequestedState();
-    this.connected = value;
-    if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
     if (value) {
+      this.resetRequestedState();
       this.auth(this.Token);
       this.requestStack.forEach((e) => {
         this.sendToSocket(e.method, e.data);
         this.requestStack = this.requestStack.filter((e1) => e1 != e);
       });
     }
+    this.connected = value;
+    if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
   }
   private static resetRequestedStateCallbacks: Function[] = [];
   private connectionEstablishedOnce: boolean = false;
@@ -102,7 +102,7 @@ export class WebsocketClient {
   }
 
   protected sendToSocket(method: string, data: any) {
-    if (!this.connected) {
+    if (this.ws.readyState != this.ws.OPEN) {
       this.requestStack.push({ method, data });
     } else {
       this.ws.send(JSON.stringify({ method, value: data }));
