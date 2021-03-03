@@ -75,32 +75,24 @@ export class WebsocketClient {
   }
 
   private create(url: string) {
-    try {
-      // close old connection
-      if (this.ws) {
-        this.ws.close();
-      }
-      // create new connection
-      this.ws = new WebSocket(url);
-      this.ws.onerror = (err) => {
-        console.log(err);
-        this.connect(url);
-      };
-      this.ws.onopen = () => {
-        this.Connected = true;
-      };
-      this.ws.onmessage = (e) => {
-        this.messageReceived(JSON.parse(e.data.toString()));
-      };
-      this.ws.onclose = () => {
-        this.Connected = false;
-        this.connect(url);
-      };
-    } catch (e) {
+    // create new connection
+    this.ws = new WebSocket(url);
+    this.ws.onerror = (err) => {
+      this.ws.close();
+      console.log(err);
+    };
+    this.ws.onopen = () => {
+      this.Connected = true;
+    };
+    this.ws.onmessage = (e) => {
+      this.messageReceived(JSON.parse(e.data.toString()));
+    };
+    this.ws.onclose = () => {
+      if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
       setTimeout(() => {
         this.connect(url);
-      }, 500);
-    }
+      }, 1000);
+    };
   }
 
   protected sendToSocket(method: string, data: any) {
