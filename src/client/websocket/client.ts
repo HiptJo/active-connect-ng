@@ -77,8 +77,12 @@ export class WebsocketClient {
   }
 
   private create(url: string) {
-    console.log("trying to recreate connection");
     try {
+      // close old connection
+      if (this.ws) {
+        this.ws.close();
+      }
+      // create new connection
       this.ws = new WebSocket(url);
       this.ws.onerror = (err) => {
         console.log(err);
