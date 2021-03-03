@@ -47,7 +47,6 @@ export class WebsocketClient {
     if (window.localStorage) window.localStorage.setItem("token", val);
   }
 
-  private connected: boolean;
   private set Connected(value: boolean) {
     if (value) {
       this.resetRequestedState();
@@ -57,7 +56,6 @@ export class WebsocketClient {
         this.requestStack = this.requestStack.filter((e1) => e1 != e);
       });
     }
-    this.connected = value;
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
   }
   private static resetRequestedStateCallbacks: Function[] = [];
