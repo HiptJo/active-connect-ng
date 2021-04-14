@@ -112,18 +112,22 @@ export class WebsocketClient {
     return this.expectMethod(`m.${method}`);
   }
   // remove map to allow duplicate calls
-  private expectedMethods: Map<string, Function> = new Map();
+  private expectedMethods: Map<string, Array<Function>> = new Map();
   private expectMethod(method: string) {
     return new Promise((resolve) => {
-      this.expectedMethods.set(method, resolve);
+      if (this.expectedMethods.has(method)) {
+        let arr = this.expectedMethods.get(method);
+        arr.push(resolve);
+      } else {
+        this.expectedMethods.set(method, [resolve]);
+      }
     });
   }
 
   private messageReceived({ method, value }: { method: string; value: any }) {
     const callback = this.expectedMethods.get(method);
-    if (callback) {
-      this.expectedMethods.delete(method);
-      callback(value);
+    if (callback && callback.length > 0) {
+      callback.shift()(value);
     } else {
       const out = WebsocketClient.outbounds.get(method);
       if (out) {
