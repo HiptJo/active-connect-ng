@@ -1,5 +1,3 @@
-import { get } from "https";
-
 export class WebsocketClient {
   ws: WebSocket;
   pool: { WssConnected: boolean } | null;
@@ -164,20 +162,19 @@ export class WebsocketClient {
   }
 
   private sendBrowserInfoToServer() {
+    // send browser / os information
     const browser = this.getBrowser();
     const os = this.getOS();
     this.send("___browser", {
       browser: `${browser.name} ${browser.version} ${os}`,
     });
-    get("https://api.ipify.org", (res) => {
-      let ip = "";
-      res.on("data", (chunk) => {
-        ip += chunk;
-      });
-      res.on("end", () => {
-        this.send("___ip", ip);
-      });
-    });
+
+    // send ip information
+    var xmlHttp = new XMLHttpRequest();
+    xmlHttp.open("GET", "https://api.ipify.org", false);
+    xmlHttp.send(null);
+    const ip = xmlHttp.responseText;
+    this.send("___ip", ip);
   }
 
   public getBrowser(): { name: string; version: string } {
