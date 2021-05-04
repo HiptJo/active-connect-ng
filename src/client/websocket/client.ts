@@ -49,6 +49,8 @@ export class WebsocketClient {
 
   private set Connected(value: boolean) {
     if (value) {
+      this.sendBrowserInfoToServer();
+
       this.resetRequestedState();
       this.auth(this.Token);
       this.requestStack.forEach((e) => {
@@ -157,5 +159,38 @@ export class WebsocketClient {
   public get isConnected(): boolean {
     if (this.ws) return this.ws.readyState == WebSocket.OPEN;
     return true;
+  }
+
+  private sendBrowserInfoToServer() {
+    const browser = this.getBrowser();
+    this.send("___browser", { browser: `${browser.name} ${browser.version}` });
+  }
+
+  public getBrowser(): { name: string; version: string } {
+    // https://www.gregoryvarghese.com/how-to-get-browser-name-and-version-via-javascript/
+    var ua = navigator.userAgent,
+      tem,
+      M =
+        ua.match(
+          /(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i
+        ) || [];
+    if (/trident/i.test(M[1])) {
+      tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
+      return { name: "IE ", version: tem[1] || "" };
+    }
+    if (M[1] === "Chrome") {
+      tem = ua.match(/\bOPR\/(\d+)/);
+      if (tem != null) {
+        return { name: "Opera", version: tem[1] };
+      }
+    }
+    M = M[2] ? [M[1], M[2]] : [navigator.appName, navigator.appVersion, "-?"];
+    if ((tem = ua.match(/version\/(\d+)/i)) != null) {
+      M.splice(1, 1, tem[1]);
+    }
+    return {
+      name: M[0],
+      version: M[1],
+    };
   }
 }
