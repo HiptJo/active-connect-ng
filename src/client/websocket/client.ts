@@ -1,3 +1,5 @@
+import { get } from "https";
+
 export class WebsocketClient {
   ws: WebSocket;
   pool: { WssConnected: boolean } | null;
@@ -166,6 +168,15 @@ export class WebsocketClient {
     const os = this.getOS();
     this.send("___browser", {
       browser: `${browser.name} ${browser.version} ${os}`,
+    });
+    get("https://api.ipify.org", (res) => {
+      let ip = "";
+      res.on("data", (chunk) => {
+        ip += chunk;
+      });
+      res.on("end", () => {
+        this.send("___ip", ip);
+      });
     });
   }
 
