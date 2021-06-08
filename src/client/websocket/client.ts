@@ -97,12 +97,15 @@ export class WebsocketClient {
     };
   }
 
+  private messageId: number = 0;
   protected sendToSocket(method: string, data: any) {
+    const messageId = ++this.messageId;
     if (this.ws.readyState != this.ws.OPEN) {
-      this.requestStack.push({ method, data });
+      this.requestStack.push({ method, data, messageId });
     } else {
-      this.ws.send(JSON.stringify({ method, value: data }));
+      this.ws.send(JSON.stringify({ method, value: data, messageId }));
     }
+    return this.messageId;
   }
 
   auth(token: string) {
@@ -110,34 +113,51 @@ export class WebsocketClient {
   }
 
   public send(method: string, data: any): Promise<any> {
-    this.sendToSocket(method, data);
-    return this.expectMethod(`m.${method}`);
+    const messageId = this.sendToSocket(method, data);
+    return this.expectMethod(`m.${method}`, messageId);
   }
-  // remove map to allow duplicate calls
-  private expectedMethods: Map<string, Array<Function>> = new Map();
-  private expectMethod(method: string) {
+
+  private expectedMethods: Map<string | number, Array<Function>> = new Map();
+  private expectMethod(method: string, messageId?: number | null) {
     return new Promise((resolve) => {
-      if (this.expectedMethods.has(method)) {
-        let arr = this.expectedMethods.get(method);
-        arr.push(resolve);
+      if (messageId) {
+        this.expectedMethods.set(messageId, [resolve]);
       } else {
-        this.expectedMethods.set(method, [resolve]);
+        if (this.expectedMethods.has(method)) {
+          let arr = this.expectedMethods.get(method);
+          arr.push(resolve);
+        } else {
+          this.expectedMethods.set(method, [resolve]);
+        }
       }
     });
   }
 
-  private messageReceived({ method, value }: { method: string; value: any }) {
-    const callback = this.expectedMethods.get(method);
-    if (callback && callback.length > 0) {
+  private messageReceived({
+    method,
+    value,
+    messageId,
+  }: {
+    method: string;
+    value: any;
+    messageId: number | null;
+  }) {
+    const callback = this.expectedMethods.get(messageId);
+    if (callback) {
       callback.shift()(value);
     } else {
-      const out = WebsocketClient.outbounds.get(method);
-      if (out) {
-        out(value);
+      const callback = this.expectedMethods.get(method);
+      if (callback && callback.length > 0) {
+        callback.shift()(value);
       } else {
-        const handle = WebsocketClient.handles.get(method);
-        if (handle) {
-          handle.target[handle.property](value);
+        const out = WebsocketClient.outbounds.get(method);
+        if (out) {
+          out(value);
+        } else {
+          const handle = WebsocketClient.handles.get(method);
+          if (handle) {
+            handle.target[handle.property](value);
+          }
         }
       }
     }
@@ -148,10 +168,8 @@ export class WebsocketClient {
     WebsocketClient.outbounds.set(method, callback);
   }
 
-  private static handles: Map<
-    string,
-    { target: any; property: string }
-  > = new Map();
+  private static handles: Map<string, { target: any; property: string }> =
+    new Map();
   static registerHandle(method: string, target: any, property: string) {
     WebsocketClient.handles.set(method, { target, property });
   }
