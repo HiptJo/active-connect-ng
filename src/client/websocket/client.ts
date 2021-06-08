@@ -105,7 +105,7 @@ export class WebsocketClient {
     } else {
       this.ws.send(JSON.stringify({ method, value: data, messageId }));
     }
-    return this.messageId;
+    return messageId;
   }
 
   auth(token: string) {
