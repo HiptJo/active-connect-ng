@@ -52,10 +52,11 @@ export class WebsocketClient {
       this.sendBrowserInfoToServer();
 
       this.resetRequestedState();
-      this.auth(this.Token);
-      this.requestStack.forEach((e) => {
-        this.sendToSocket(e.method, e.data);
-        this.requestStack = this.requestStack.filter((e1) => e1 != e);
+      this.auth(this.Token).then(() => {
+        this.requestStack.forEach((e) => {
+          this.sendToSocket(e.method, e.data);
+          this.requestStack = this.requestStack.filter((e1) => e1 != e);
+        });
       });
     }
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
@@ -108,8 +109,8 @@ export class WebsocketClient {
     return messageId;
   }
 
-  auth(token: string) {
-    this.sendToSocket("auth.token", token);
+  async auth(token: string): Promise<any> {
+    return this.sendToSocket("auth.token", token);
   }
 
   public send(method: string, data: any): Promise<any> {
