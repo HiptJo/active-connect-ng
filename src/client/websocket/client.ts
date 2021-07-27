@@ -99,10 +99,15 @@ export class WebsocketClient {
   }
 
   private messageId: number = 0;
-  protected sendToSocket(method: string, data: any) {
+  protected sendToSocket(
+    method: string,
+    data: any,
+    dontEnsureTransmission?: boolean
+  ) {
     const messageId = ++this.messageId;
     if (this.ws.readyState != this.ws.OPEN) {
-      this.requestStack.push({ method, data, messageId });
+      if (!dontEnsureTransmission)
+        this.requestStack.push({ method, data, messageId });
     } else {
       this.ws.send(JSON.stringify({ method, value: data, messageId }));
     }
@@ -113,8 +118,16 @@ export class WebsocketClient {
     return this.sendToSocket("auth.token", token);
   }
 
-  public send(method: string, data: any): Promise<any> {
-    const messageId = this.sendToSocket(method, data);
+  public send(
+    method: string,
+    data: any,
+    dontEnsureTransmission?: boolean
+  ): Promise<any> {
+    const messageId = this.sendToSocket(
+      method,
+      data,
+      dontEnsureTransmission || false
+    );
     return this.expectMethod(`m.${method}`, messageId);
   }
 

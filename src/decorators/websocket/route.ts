@@ -1,4 +1,8 @@
-export function Route(method: string, loadingKey?: string) {
+export function Route(
+  method: string,
+  loadingKey?: string,
+  dontEnsureTransmission?: boolean
+) {
   return function _Route(target: any, propertyKey: string): any {
     // method annotation
     if (!target.___loading) target.___loading = {};
@@ -9,7 +13,7 @@ export function Route(method: string, loadingKey?: string) {
       const promise = original(...data);
       let res = null;
       if (this.client) {
-        res = await this.client.send(method, data[0]);
+        res = await this.client.send(method, data[0], dontEnsureTransmission);
       }
       await promise;
       if (loadingKey) target.___loading[loadingKey]--;
