@@ -108,6 +108,7 @@ export class WebsocketClient {
     if (this.ws.readyState != this.ws.OPEN) {
       if (!dontEnsureTransmission)
         this.requestStack.push({ method, data, messageId });
+      else return false;
     } else {
       this.ws.send(JSON.stringify({ method, value: data, messageId }));
     }
@@ -128,7 +129,13 @@ export class WebsocketClient {
       data,
       dontEnsureTransmission || false
     );
-    return this.expectMethod(`m.${method}`, messageId);
+    if (messageId) {
+      return this.expectMethod(`m.${method}`, messageId);
+    } else {
+      return new Promise((resolve) => {
+        resolve(false);
+      });
+    }
   }
 
   private expectedMethods: Map<string | number, Array<Function>> = new Map();
