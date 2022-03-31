@@ -1,3 +1,5 @@
+import { JsonParser } from "../../json/json-parser";
+
 export class WebsocketClient {
   ws: WebSocket;
   pool: { WssConnected: boolean } | null;
@@ -88,7 +90,7 @@ export class WebsocketClient {
       this.Connected = true;
     };
     this.ws.onmessage = (e) => {
-      this.messageReceived(JSON.parse(e.data.toString()));
+      this.messageReceived(JsonParser.parse(e.data.toString()));
     };
     this.ws.onclose = () => {
       if (this.pool && this.pool.WssConnected) this.pool.WssConnected = false;
@@ -110,7 +112,7 @@ export class WebsocketClient {
         this.requestStack.push({ method, data, messageId });
       else return false;
     } else {
-      this.ws.send(JSON.stringify({ method, value: data, messageId }));
+      this.ws.send(JsonParser.stringify({ method, value: data, messageId }));
     }
     return messageId;
   }
