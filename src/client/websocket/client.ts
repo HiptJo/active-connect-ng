@@ -209,16 +209,6 @@ export class WebsocketClient {
     this.send("___browser", {
       browser: `${browser.name} ${browser.version} ${os}`,
     });
-
-    new Promise((resolve: Function) => {
-      // send ip information
-      var xmlHttp = new XMLHttpRequest();
-      xmlHttp.open("GET", "https://api.ipify.org", false);
-      xmlHttp.send(null);
-      const ip = xmlHttp.responseText;
-      this.send("___ip", ip);
-      resolve();
-    }).then();
   }
 
   public getBrowser(): { name: string; version: string } {
