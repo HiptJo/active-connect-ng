@@ -168,6 +168,7 @@ export class WebsocketClient {
     const callback = this.expectedMethods.get(messageId);
     if (callback) {
       callback.shift()(value);
+      this.invokeSuccessHandlers(method);
     } else {
       const callback = this.expectedMethods.get(method);
       if (callback && callback.length > 0) {
@@ -260,5 +261,22 @@ export class WebsocketClient {
     }
 
     return os;
+  }
+
+  private static onSuccessHandlers: { callback: Function; regexp: RegExp }[] =
+    [];
+  public static onSuccess(callback: Function, regexp: RegExp) {
+    this.onSuccessHandlers.push({ callback, regexp });
+  }
+
+  private invokeSuccessHandlers(method: string) {
+    WebsocketClient.onSuccessHandlers
+      .filter((e) => e.regexp.test(method))
+      .forEach((e) => {
+        var res = e.callback();
+        if (res && res.then) {
+          res.then();
+        }
+      });
   }
 }
