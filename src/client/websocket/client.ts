@@ -55,10 +55,12 @@ export class WebsocketClient {
 
       this.resetRequestedState();
       this.auth(this.Token).then(() => {
-        this.requestStack.forEach((e) => {
-          this.sendToSocket(e.method, e.data);
-          this.requestStack = this.requestStack.filter((e1) => e1 != e);
-        });
+        setTimeout(() => {
+          this.requestStack.forEach((e) => {
+            this.sendToSocket(e.method, e.data);
+            this.requestStack = this.requestStack.filter((e1) => e1 != e);
+          });
+        }, 2000);
       });
     }
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
