@@ -55,12 +55,16 @@ export class WebsocketClient {
 
       this.resetRequestedState();
       this.auth(this.Token).then(() => {
-        setTimeout(() => {
-          this.requestStack.forEach((e) => {
-            this.sendToSocket(e.method, e.data);
-            this.requestStack = this.requestStack.filter((e1) => e1 != e);
-          });
-        }, 2000);
+        Promise.all(WebsocketClient.onReconnectCallback.map((c) => c())).then(
+          () => {
+            setTimeout(() => {
+              this.requestStack.forEach((e) => {
+                this.sendToSocket(e.method, e.data);
+                this.requestStack = this.requestStack.filter((e1) => e1 != e);
+              });
+            }, 2000);
+          }
+        );
       });
     }
     if (this.pool && this.pool.WssConnected) this.pool.WssConnected = value;
@@ -198,6 +202,11 @@ export class WebsocketClient {
     new Map();
   static registerHandle(method: string, target: any, property: string) {
     WebsocketClient.handles.set(method, { target, property });
+  }
+
+  private static onReconnectCallback: Function[] = [];
+  static onReconnect(callback: Function) {
+    WebsocketClient.onReconnectCallback.push(callback);
   }
 
   public get isConnected(): boolean {
