@@ -27,6 +27,7 @@ export class WebsocketClient {
 
   public reconnect() {
     if (this.ws) {
+      this.ws.onclose = () => {};
       this.ws.close();
     }
     this.create(this.url);
