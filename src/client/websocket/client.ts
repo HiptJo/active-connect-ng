@@ -25,6 +25,13 @@ export class WebsocketClient {
     this.connect(this.url);
   }
 
+  public reconnect() {
+    if (this.ws) {
+      this.ws.close();
+    }
+    this.create(this.url);
+  }
+
   subject: any;
 
   private connect(url: string) {
